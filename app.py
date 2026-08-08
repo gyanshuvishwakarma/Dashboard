@@ -27,7 +27,24 @@ st.set_page_config(
 # Windows:  DATA_PATH = Path(r"C:\Users\YourName\Documents\sales23_advanced.csv")
 # Mac/Linux: DATA_PATH = Path("/Users/yourname/Documents/sales23_advanced.csv")
 
+# path to your CSV (edit when running locally)
 DATA_PATH = Path(r"C:\Users\vishw\OneDrive\Desktop\github\sales23_advanced.csv")
+
+# If the hard-coded path isn't present, allow the user to upload the CSV in the Streamlit UI.
+# This works both locally and when deployed (where the Windows path won't exist).
+data_source = None
+if DATA_PATH.exists():
+    data_source = DATA_PATH
+else:
+    st.warning(f"Data file not found at: {DATA_PATH}. You can upload the CSV file here instead.")
+    uploaded_file = st.file_uploader("Upload sales23_advanced.csv", type=["csv"])
+    if uploaded_file is not None:
+        data_source = uploaded_file
+    else:
+        # If the app is started without uploading, stop with a friendly message.
+        st.info("Please upload sales23_advanced.csv or update DATA_PATH in app.py to a valid file path.")
+        st.stop()
+
 # --------------------------------------------------------------------------------
 # CUSTOM CSS
 # --------------------------------------------------------------------------------
@@ -91,11 +108,7 @@ def load_data(path: Path) -> pd.DataFrame:
     return df
 
 
-if not DATA_PATH.exists():
-    st.error(f"Data file not found at: {DATA_PATH}. Please update DATA_PATH in app.py.")
-    st.stop()
-
-raw_df = load_data(DATA_PATH)
+raw_df = load_data(data_source)
 
 # --------------------------------------------------------------------------------
 # SIDEBAR FILTERS
@@ -288,7 +301,8 @@ with tab2:
     st.plotly_chart(fig_heat, use_container_width=True)
 
     st.subheader("Sub-Category Performance (Sales vs Profit)")
-    subcat = df.groupby("Sub_Category", as_index=False).agg(Sales=("Sales", "sum"), Profit=("Profit", "sum"),
+    subcat = df.groupby("Sub_Category", as_index=False).agg(Sales=("Sales", "sum"), Profit=("Profit", "sum",
+                                                              ),
                                                               Orders=("Order_ID", "nunique"))
     fig_sub = px.scatter(subcat, x="Sales", y="Profit", size="Orders", color="Sub_Category", text="Sub_Category",
                           size_max=45)
